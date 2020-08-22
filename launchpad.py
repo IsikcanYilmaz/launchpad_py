@@ -16,7 +16,7 @@ class Pixel:
         self.g = 0
         self.b = 0
 
-    def SetRGB(self, r, g, b):
+    def SetRgb(self, r, g, b):
         self.r = r
         self.g = g
         self.b = b
@@ -24,7 +24,8 @@ class Pixel:
     def SetPreset(self, val):
         self.presetColorVal = val
 
-
+# LaunchpadMiniMk3 Class
+# - This holds the main functionality that controls the LPMiniMk3. It implements whats described in the lpminimk3 programmers manual.
 class LaunchpadMiniMk3:
     def __init__(self):
         self.inport = mido.open_input('Launchpad Mini MK3:Launchpad Mini MK3 MIDI 2 20:1')
@@ -53,18 +54,19 @@ class LaunchpadMiniMk3:
         return self.grid[y][x]
 
     def SetPixel(self, x, y, color):
+        self.GetPixel(x, y).SetPreset(color)
         msg = mido.Message('note_on', note=((y+1)*10) + (x+1) , velocity=color)
         self.outport.send(msg)
-        self.grid[y][x] = color
 
     def SetPixelRgb(self, x, y, r, g, b):
-        GetPixel(x, y).SetRGB(r, g, b)
+        self.GetPixel(x, y).SetRgb(r, g, b)
+        data=[0x00, 0x20, 0x29, 0x02, 0x0D, 0x03]
+        msg = mido.Message('sysex', data = data)
 
     def ClearGrid(self):
         for x in range(0, GRID_WIDTH):
             for y in range(0, GRID_HEIGHT):
                 self.SetPixel(x, y, 0)
-
 
     def DisplayText(self, text, loop=False, speed=5, color=5):
         if (speed > 0xff):
@@ -103,8 +105,8 @@ class LaunchpadMiniMk3:
 def main():
     lp = LaunchpadMiniMk3()
     lp.SelectLayout(LAYOUT_PROGRAMMER)
-    lp.DisplayText("Hello Whorl", loop=True, speed=10, color=57)
-    print("ASD")
+    lp.DisplayText("Hello Whorl", loop=False, speed=10, color=57)
+    lp.SetPixel(3, 3, 30)
 
 
 if __name__ == "__main__":
