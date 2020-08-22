@@ -4,9 +4,26 @@ from common import *
 import mido
 import time
 
+# Pixel Class
+# - Can be in "Preset color" mode or "RGB" mode. The first is a value from 0 to 127. Refer to color palette in the "Launchpad programmers manual".
+# The second is rgb mode, 3 bytes to express a pixel. The difference between these modes is the ease of lighting up a pixel using the preset colors, since it
+# takes one "note on" midi packet to light a pixel with a preset color. Its bit longer than that with the rgbs.
+# - One can set mode explicitly via SetMode() or using either SetRGB or SetPreset will change the mode accordingly anyway.
 class Pixel:
     def __init__(self):
-        pass
+        self.presetColorVal = 0
+        self.r = 0
+        self.g = 0
+        self.b = 0
+
+    def SetRGB(self, r, g, b):
+        self.r = r
+        self.g = g
+        self.b = b
+
+    def SetPreset(self, val):
+        self.presetColorVal = val
+
 
 class LaunchpadMiniMk3:
     def __init__(self):
@@ -41,12 +58,29 @@ class LaunchpadMiniMk3:
         self.grid[y][x] = color
 
     def SetPixelRgb(self, x, y, r, g, b):
-        pass
+        GetPixel(x, y).SetRGB(r, g, b)
 
     def ClearGrid(self):
         for x in range(0, GRID_WIDTH):
             for y in range(0, GRID_HEIGHT):
                 self.SetPixel(x, y, 0)
+
+
+    def DisplayText(self, text, loop=False, speed=5, color=5):
+        if (speed > 0xff):
+            print("Bad speed argument")
+            return
+        if (color > 0xff):
+            print("Bad color argument")
+            return
+        data = [0x00, 0x20, 0x29, 0x02, 0x0D, 0x07]
+        data.append(0x00 if loop == False else 0x01)
+        data.append(speed)
+        data.append(0x00)
+        data.append(color)
+        data.extend([i for i in bytearray(text.encode('utf-8'))])
+        msg = mido.Message('sysex', data=data)
+        self.outport.send(msg)
 
     def Poll(self):
         msg = self.inport.poll()
@@ -69,17 +103,8 @@ class LaunchpadMiniMk3:
 def main():
     lp = LaunchpadMiniMk3()
     lp.SelectLayout(LAYOUT_PROGRAMMER)
-    lp.SetPixel(3, 7, 0)
-    return
-    i = 0
-    j = 0
-    while(True):
-        for k in range(0, 9):
-            lp.SetPixel(k, i%9, j%128)
-        time.sleep(0.03)
-        i += 1
-        j += 1
-        lp.Poll()
+    lp.DisplayText("Hello Whorl", loop=True, speed=10, color=57)
+    print("ASD")
 
 
 if __name__ == "__main__":
