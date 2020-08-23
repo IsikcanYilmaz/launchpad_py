@@ -11,15 +11,18 @@ import time
 # - Auto mode where neat things happen. Enable using the "Drums" button.
 
 # AutomodeBot implements the AI that works in Automode.
-walkLengthMax = 30
-walkLengthMin = 5
-waitTimeMin = -1
-waitTimeMax = 0
+walkLengthMax = 50
+walkLengthMin = 2
+waitTimeMin = 0
+waitTimeMax = 10
+breakOnCollision = True
+chanceOfErasure = 30
 class AutomodeBot:
-    def __init__(self):
+    def __init__(self, launchpad):
         self.walking = True
         self.walkLength = 0
-        self.walkEveryXFrame = 1
+        self.walkEveryXFrame = 2
+        self.lp = launchpad
 
         self.walkSpeedWait = 0
         self.wait = 0
@@ -34,8 +37,11 @@ class AutomodeBot:
             self.x = randrange(0, INNER_GRID_WIDTH)
             self.y = randrange(0, INNER_GRID_HEIGHT)
             self.wait = randrange(waitTimeMin, waitTimeMax)
-            self.color = randrange(0, 128)
-            print("NEW X %d Y %d WAIT %d WL %d" % (self.x, self.y, self.wait, self.walkLength))
+            if (self.color != 0 and (chanceOfErasure and randrange(0, 100) < chanceOfErasure)):
+                self.color = 0
+            else:
+                self.color = randrange(0, 128)
+            print("\nNEW X %d Y %d WAIT %d WL %d" % (self.x, self.y, self.wait, self.walkLength))
 
         # If bot still walking, process the walk
         elif (self.walkLength > 0):
@@ -48,14 +54,36 @@ class AutomodeBot:
                 # Find random direction among 8 directions
                 xdir = 0
                 ydir = 0
-                while(self.lastx == (self.x + xdir) and self.lasty == (self.y + ydir)):
-                    xdir = randrange(-1, 2)
-                    ydir = randrange(-1, 2)
-                self.x += xdir
-                self.y += ydir
-                self.x = self.x % INNER_GRID_WIDTH
-                self.y = self.y % INNER_GRID_HEIGHT
-                self.walkLength -= 1
+
+                # Rule of next step coordinate:
+                # wont be the last pixel we were on
+                # wont be a pixel we already have been on
+
+                # Check neighbors colors. Pick next pixel randomly out of pixels that dont have our color.
+                left = (self.x-1 if self.x-1 >= 0 else (INNER_GRID_WIDTH) + (self.x-1))
+                right = (self.x+1 if self.x+1 < INNER_GRID_WIDTH else (self.x+1) - INNER_GRID_WIDTH)
+                down = (self.y-1 if self.y-1 >= 0 else (INNER_GRID_HEIGHT) + (self.y-1))
+                up = (self.y+1 if self.y+1 < INNER_GRID_HEIGHT else (self.y+1) - INNER_GRID_HEIGHT)
+                neighborCoords = [(left, down),
+                                  (left, self.y),
+                                  (left, up),
+                                  (self.x, up),
+                                  (self.x, down),
+                                  (right, down),
+                                  (right, self.y),
+                                  (right, up)]
+
+                neighborColors = [self.lp.GetPixel(x, y).GetColor() for (x, y) in neighborCoords]
+                if (breakOnCollision):
+                    possibleCoords = [(x, y) for (x, y) in neighborCoords if (self.lp.GetPixel(x, y).GetColor() != self.color)]
+                else:
+                    possibleCoords = neighborCoords
+
+                if (len(possibleCoords)):
+                    (self.x, self.y) = possibleCoords[randrange(0, len(possibleCoords))]
+                    self.walkLength -= 1
+                else:
+                    self.walkLength = 0
 
         # If bot done walking, is waiting
         elif (self.wait > 0):
@@ -67,7 +95,7 @@ class AutomodeBot:
         return (self.x, self.y, self.color)
 
 lp = LaunchpadMiniMk3()
-a = AutomodeBot()
+a = AutomodeBot(lp)
 
 automodeEnabled = False
 

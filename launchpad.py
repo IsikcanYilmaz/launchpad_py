@@ -24,6 +24,12 @@ class Pixel:
     def SetPreset(self, val):
         self.presetColorVal = val
 
+    def GetColor(self):
+        return self.presetColorVal
+
+    def GetColorRgb(self):
+        return (self.r, self.g, self.b)
+
 # LaunchpadMiniMk3 Class
 # - This holds the main functionality that controls the LPMiniMk3. It implements whats described in the lpminimk3 programmers manual.
 class LaunchpadMiniMk3:
