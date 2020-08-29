@@ -93,11 +93,11 @@ class LaunchpadMiniMk3:
     def Poll(self):
         msg = self.inport.poll()
         if (msg):
-            if (msg.type == 'note_on' and self.onButtonPressCb):
+            if (msg.type == 'note_on' and msg.velocity == 127 and self.onButtonPressCb):
                 self.onButtonPressCb(msg)
             if (msg.type == 'control_change' and self.onButtonPressCb):
                 self.onControlChangeCb(msg)
-            if (msg.type == 'note_off' and self.onButtonReleaseCb):
+            if (msg.type == 'note_on' and msg.velocity == 0 and self.onButtonReleaseCb):
                 self.onButtonReleaseCb(msg)
 
     def LpService(self):
