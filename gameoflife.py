@@ -7,11 +7,12 @@ import time
 
 # Game of Life
 '''
-Any live cell with fewer than two live neighbours dies, as if by underpopulation.
-Any live cell with two or three live neighbours lives on to the next generation.
-Any live cell with more than three live neighbours dies, as if by overpopulation.
-Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
+Any live cell with fewer than two live neighbours dies.
+Any live cell with two or three live neighbours lives on.
+Any live cell with more than three live neighbours dies.
+Any dead cell with exactly three live neighbours becomes a live cell.
 '''
+
 class GoLBoard:
     def __init__(self, launchpad):
         self.launchpad = launchpad
@@ -84,12 +85,9 @@ seed(0)
 lp = LaunchpadMiniMk3()
 sim = GoLBoard(lp)
 simRunning = False
-playFrameDivider = playFrameDividerMax = 30
+playFrameDivider = playFrameDividerMax = 15
 
 color = 0
-
-def buttonRelease(msg):
-    print("BUTTON RELEASE", msg)
 
 def controlChange(msg):
     global color, simRunning, playFrameDividerMax
@@ -131,6 +129,12 @@ def controlChange(msg):
             color = color + 128
         color = color % 128
         updateColorSignifier()
+
+def buttonRelease(msg):
+    global color, simRunning
+    x = (msg.note % 10) - 1
+    y = int(msg.note / 10) - 1
+    print("BUTTON RELEASE x %d y %d" % (x, y), msg)
 
 def buttonPress(msg):
     x = (msg.note % 10) - 1
