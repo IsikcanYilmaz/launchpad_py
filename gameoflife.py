@@ -55,7 +55,7 @@ class GoLBoard:
                         if (yDir == 1 and y == INNER_GRID_HEIGHT-1):
                             continue
                         neighbors.append(self.currentFrame[y+yDir][x+xDir])
-                aliveNeighbors = [x for x in neighbors if x > 0]
+                aliveNeighbors = [n for n in neighbors if n > 0]
                 cellLives = False
 
                 # is alive and one or no neighbors
