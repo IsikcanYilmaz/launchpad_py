@@ -1,4 +1,4 @@
 # launchpad_py
 My Launchpad Mini MK3 driver and programs
 
-![](.showoff/demo.mp4)
+![](.showoff/k8G13r.gif)
