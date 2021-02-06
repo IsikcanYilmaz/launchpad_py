@@ -34,8 +34,8 @@ class Pixel:
 # - This holds the main functionality that controls the LPMiniMk3. It implements whats described in the lpminimk3 programmers manual.
 class LaunchpadMiniMk3:
     def __init__(self):
-        self.inport = mido.open_input('Launchpad Mini MK3:Launchpad Mini MK3 MIDI 2 20:1')
-        self.outport = mido.open_output('Launchpad Mini MK3:Launchpad Mini MK3 MIDI 2 20:1')
+        self.inport = mido.open_input('Launchpad Mini MK3:Launchpad Mini MK3 MIDI 2 24:1')
+        self.outport = mido.open_output('Launchpad Mini MK3:Launchpad Mini MK3 MIDI 2 24:1')
         self.grid = [[Pixel() for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
 
         self.onButtonPressCb = None
