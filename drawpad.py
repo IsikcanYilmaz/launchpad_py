@@ -13,8 +13,8 @@ import time
 # AutomodeBot implements the AI that works in Automode.
 walkLengthMax = 50
 walkLengthMin = 2
-waitTimeMin = 0
-waitTimeMax = 10
+waitTimeMin = 20
+waitTimeMax = 100
 breakOnCollision = True
 chanceOfErasure = 30
 class AutomodeBot:
@@ -94,7 +94,7 @@ class AutomodeBot:
         self.lasty = self.y
         return (self.x, self.y, self.color)
 
-lp = LaunchpadMiniMk3()
+lp = LaunchpadMiniMk3(pickPortInteractive())
 a = AutomodeBot(lp)
 
 automodeEnabled = False

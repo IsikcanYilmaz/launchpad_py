@@ -3,6 +3,11 @@
 from common import *
 import mido
 import time
+import colorsys
+
+H_MAX = 360
+S_MAX = 100
+V_MAX = 100
 
 # Pixel Class
 # - Can be in "Preset color" mode or "RGB" mode. The first is a value from 0 to 127. Refer to color palette in the "Launchpad programmers manual".
@@ -33,9 +38,9 @@ class Pixel:
 # LaunchpadMiniMk3 Class
 # - This holds the main functionality that controls the LPMiniMk3. It implements whats described in the lpminimk3 programmers manual.
 class LaunchpadMiniMk3:
-    def __init__(self):
-        self.inport = mido.open_input('Launchpad Mini MK3:Launchpad Mini MK3 MIDI 2 24:1')
-        self.outport = mido.open_output('Launchpad Mini MK3:Launchpad Mini MK3 MIDI 2 24:1')
+    def __init__(self, portstr):
+        self.inport = mido.open_input(portstr)
+        self.outport = mido.open_output(portstr)
         self.grid = [[Pixel() for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
 
         self.onButtonPressCb = None
@@ -66,8 +71,16 @@ class LaunchpadMiniMk3:
 
     def SetPixelRgb(self, x, y, r, g, b):
         self.GetPixel(x, y).SetRgb(r, g, b)
+        ledIdx = ((y+1) * 10) + (x+1)
+        r = (r if r<128 else 127)
+        g = (g if g<128 else 127)
+        b = (b if b<128 else 127)
         data=[0x00, 0x20, 0x29, 0x02, 0x0D, 0x03]
+        data.append(0x03)
+        data.append(ledIdx)
+        data.extend([r, g, b])
         msg = mido.Message('sysex', data = data)
+        self.outport.send(msg)
 
     def ClearGrid(self):
         for x in range(0, GRID_WIDTH):
@@ -106,14 +119,33 @@ class LaunchpadMiniMk3:
     def LpServiceStart(self):
         pass
 
-
+def pickPortInteractive():
+    print('[*] Select port. (Working example: %s)' % ('Launchpad Mini MK3:Launchpad Mini MK3 MIDI 2 24:1'))
+    inputNames = mido.get_input_names()
+    for i in range(0, len(inputNames)):
+        print(i, inputNames[i])
+    selection = int(input())
+    print(selection, inputNames[selection])
+    return inputNames[selection]
 
 def main():
-    lp = LaunchpadMiniMk3()
+    lp = LaunchpadMiniMk3(pickPortInteractive())
     lp.SelectLayout(LAYOUT_PROGRAMMER)
-    lp.DisplayText("Hello Whorl", loop=False, speed=10, color=57)
-    lp.SetPixel(3, 3, 30)
+    # lp.DisplayText("Hello Whorl", loop=False, speed=10, color=57)
+    h = 0
+    s = 70
+    v = 100
+    while(True):
+        for i in range(0, 9):
+            test_color = colorsys.hsv_to_rgb((10*i+h)/H_MAX, s/S_MAX, v/V_MAX)
+            test_color = [i * 127 for i in test_color]
+            for j in range(0, 9):
+                lp.SetPixelRgb(i, j, int(test_color[0]), int(test_color[1]), int(test_color[2]))
+        h += 1
+        time.sleep(0.01)
 
+    input()
+    lp.SelectLayout(LAYOUT_SESSION)
 
 if __name__ == "__main__":
     main()
