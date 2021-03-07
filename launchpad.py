@@ -5,10 +5,6 @@ import mido
 import time
 import colorsys
 
-H_MAX = 360
-S_MAX = 100
-V_MAX = 100
-
 # Pixel Class
 # - Can be in "Preset color" mode or "RGB" mode. The first is a value from 0 to 127. Refer to color palette in the "Launchpad programmers manual".
 # The second is rgb mode, 3 bytes to express a pixel. The difference between these modes is the ease of lighting up a pixel using the preset colors, since it
@@ -133,7 +129,7 @@ def main():
     lp.SelectLayout(LAYOUT_PROGRAMMER)
     # lp.DisplayText("Hello Whorl", loop=False, speed=10, color=57)
     h = 0
-    s = 70
+    s = 80
     v = 100
     while(True):
         for i in range(0, 9):
@@ -141,8 +137,8 @@ def main():
             test_color = [i * 127 for i in test_color]
             for j in range(0, 9):
                 lp.SetPixelRgb(i, j, int(test_color[0]), int(test_color[1]), int(test_color[2]))
-        h += 1
-        time.sleep(0.01)
+        h += 5
+        time.sleep(0.04)
 
     input()
     lp.SelectLayout(LAYOUT_SESSION)
