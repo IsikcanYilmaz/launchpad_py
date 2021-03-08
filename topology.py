@@ -23,7 +23,7 @@ class Grid:
 
     def printGridInt(self):
         for j in range(0, GRID_HEIGHT):
-            print([int(i) for i in self.gridArr[j]])
+            print(["%04d" % int(i) for i in self.gridArr[j]])
         print("\n")
     
     def update(self):
@@ -41,6 +41,7 @@ class Grid:
                neighborVals.append(self.getCellValue((i-1)%GRID_HEIGHT, (j-1)%GRID_HEIGHT))
                avg = sum(neighborVals)/len(neighborVals)
                diff = self.getCellValue(i, j) - avg
+               # print(int(diff))
                decay = (avg / 100)
                newVal = avg + (-1 * decay if avg >= 0 else decay)
                # newVal = avg - self.decay
@@ -48,21 +49,20 @@ class Grid:
                # newVal = (500 if newVal > 500 else newVal)
                newGridArr[i][j] = newVal
         self.gridArr = newGridArr
-        self.printGridInt()
-
-
 
     def draw(self):
-        h = 0
-        s = 50
-        v = 100
+        baseH = 200
+        baseS = 0
+        baseV = 100
         for i in range(0, GRID_WIDTH):
             for j in range(0, GRID_HEIGHT):
-                h = (self.getCellValue(i, j) / 2)
-                s = 100 #+ self.getCellValue(i,j)
+                h = baseH + (self.getCellValue(i, j) / 2) / 2
+                h = (3*H_MAX if h > 3*H_MAX else h)
+                s = baseS + self.getCellValue(i,j) / 5
                 s = (100 if s > 100 else s)
-                v = self.getCellValue(i,j) * 100 / 500
-                v = (100 if v > 100 else v)
+                v = baseV
+                # v = self.getCellValue(i,j) * 100 / 500
+                # v = (100 if v > 100 else v)
                 cellColor = colorsys.hsv_to_rgb((h)/H_MAX, s/S_MAX, v/V_MAX)
                 cellColor = [i * 127 for i in cellColor]
                 lp.SetPixelRgb(i, j, int(cellColor[0]), int(cellColor[1]), int(cellColor[2]))
@@ -91,7 +91,7 @@ def processButtonPresses():
     global grid
     for b in pressedButtons:
         currVal = grid.getCellValue(b[0], b[1])
-        newVal = currVal + 200
+        newVal = currVal + 1000
         grid.setCellValue(b[0], b[1], newVal)
 
 def main():
