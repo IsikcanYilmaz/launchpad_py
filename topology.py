@@ -57,7 +57,7 @@ class Grid:
         for i in range(0, GRID_WIDTH):
             for j in range(0, GRID_HEIGHT):
                 h = baseH + (self.getCellValue(i, j) / 2) / 2
-                h = (3*H_MAX if h > 3*H_MAX else h)
+                # h = (3*H_MAX if h > 3*H_MAX else h)
                 s = baseS + self.getCellValue(i,j) / 5
                 s = (100 if s > 100 else s)
                 v = baseV
