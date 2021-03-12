@@ -133,13 +133,12 @@ def main():
     v = 100
     while(True):
         for i in range(0, 9):
-            test_color = colorsys.hsv_to_rgb((10*i+h)/H_MAX, s/S_MAX, v/V_MAX)
+            test_color = colorsys.hsv_to_rgb((30*i+h)/H_MAX, s/S_MAX, v/V_MAX)
             test_color = [i * 127 for i in test_color]
             for j in range(0, 9):
                 lp.SetPixelRgb(i, j, int(test_color[0]), int(test_color[1]), int(test_color[2]))
-        h += 5
-        time.sleep(0.04)
-
+        h += 1
+        time.sleep(0.01)
     input()
     lp.SelectLayout(LAYOUT_SESSION)
 

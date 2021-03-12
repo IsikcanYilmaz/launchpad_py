@@ -42,7 +42,7 @@ class Grid:
                avg = sum(neighborVals)/len(neighborVals)
                diff = self.getCellValue(i, j) - avg
                # print(int(diff))
-               decay = (avg / 100)
+               decay = 0#(avg / 100)
                newVal = avg + (-1 * decay if avg >= 0 else decay)
                # newVal = avg - self.decay
                # newVal = (0 if newVal < 0 else newVal)
