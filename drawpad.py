@@ -2,7 +2,30 @@
 
 from launchpad import *
 from random import *
+from urllib.parse import urlencode
 import time
+import sys
+import pycurl
+import requests
+import subprocess
+import re
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+# Color Picker
+def getRandomColorPalette():
+    colorPaletteFile = "colors.txt" # too impatient. this could be done with a http library
+    model="default"
+    subprocess.run("curl 'http://colormind.io/api/' --verbose --data-binary '{\"model\":\"%s\"}' > %s" % (model, colorPaletteFile), shell=True, check=True)
+    f = open(colorPaletteFile, "r")
+    l = f.read()
+    f.close()
+    l = l[l.find("[")+1:l.find("]}")]
+    palette = eval(l) # yeahhh running potentially arbitrary code is not nice. this thing is to prove the concept. 
+    return palette
 
 # Drawpad
 # - Can pick color using arrow keys. Pressing inner grid buttons lights up
@@ -12,23 +35,28 @@ import time
 
 # AutomodeBot implements the AI that works in Automode.
 walkLengthMax = 50
-walkLengthMin = 2
-waitTimeMin = 20
-waitTimeMax = 100
+walkLengthMin = 10
+waitTimeMin = 0
+waitTimeMax = 1
 breakOnCollision = True
 chanceOfErasure = 30
+USE_RGB = True # ugh this is not pretty. but the end result will look pretty
+USE_PALETTES = True
 class AutomodeBot:
     def __init__(self, launchpad):
         self.walking = True
         self.walkLength = 0
         self.walkEveryXFrame = 2
         self.lp = launchpad
+        self.currentPalette = []
+        self.currentPaletteIdx = 0
 
         self.walkSpeedWait = 0
         self.wait = 0
         self.lastx = self.lasty = 0
         self.x = self.y = 0
         self.color = 0
+        self.rgb = (0,0,0)
 
     def update(self):
         # If bot came to end of walk, start new one
@@ -37,11 +65,29 @@ class AutomodeBot:
             self.x = randrange(0, INNER_GRID_WIDTH)
             self.y = randrange(0, INNER_GRID_HEIGHT)
             self.wait = randrange(waitTimeMin, waitTimeMax)
+            if (USE_PALETTES and len(self.currentPalette) == 0):
+                self.currentPalette = getRandomColorPalette()
             if (self.color != 0 and (chanceOfErasure and randrange(0, 100) < chanceOfErasure)):
                 self.color = 0
+                self.rgb = (0,0,0)
             else:
                 self.color = randrange(0, 128)
+                if (USE_PALETTES):
+                    cidx = self.currentPaletteIdx % len(self.currentPalette)
+                    rgbScale = (1/2)
+                    self.rgb = (int(self.currentPalette[cidx][0]*rgbScale), int(self.currentPalette[cidx][1]*rgbScale), int(self.currentPalette[cidx][2]*rgbScale))
+                    self.currentPaletteIdx += 1
+                    if (self.currentPaletteIdx % (1*len(self.currentPalette)) == 0):
+                        self.currentPalette = getRandomColorPalette()
+                    self.lp.SetPixelRgb(8, 7, int(self.currentPalette[0][0]*rgbScale), int(self.currentPalette[0][1]*rgbScale), int(self.currentPalette[1][2]*rgbScale))
+                    self.lp.SetPixelRgb(8, 6, int(self.currentPalette[1][0]*rgbScale), int(self.currentPalette[1][1]*rgbScale), int(self.currentPalette[2][2]*rgbScale))
+                    self.lp.SetPixelRgb(8, 5, int(self.currentPalette[2][0]*rgbScale), int(self.currentPalette[2][1]*rgbScale), int(self.currentPalette[2][2]*rgbScale))
+                    self.lp.SetPixelRgb(8, 4, int(self.currentPalette[3][0]*rgbScale), int(self.currentPalette[3][1]*rgbScale), int(self.currentPalette[3][2]*rgbScale))
+                    self.lp.SetPixelRgb(8, 3, int(self.currentPalette[4][0]*rgbScale), int(self.currentPalette[4][1]*rgbScale), int(self.currentPalette[4][2]*rgbScale))
+                else:
+                    self.rgb = (randrange(0, 256), randrange(0, 256), randrange(0, 256))
             print("\nNEW X %d Y %d WAIT %d WL %d" % (self.x, self.y, self.wait, self.walkLength))
+            print(self.rgb)
 
         # If bot still walking, process the walk
         elif (self.walkLength > 0):
@@ -72,8 +118,11 @@ class AutomodeBot:
                                   (right, down),
                                   (right, self.y),
                                   (right, up)]
-
-                neighborColors = [self.lp.GetPixel(x, y).GetColor() for (x, y) in neighborCoords]
+                if (USE_RGB):
+                    neighborColors = [self.lp.GetPixel(x, y).GetColorRgb() for (x, y) in neighborCoords]
+                else:
+                    neighborColors = [self.lp.GetPixel(x, y).GetColor() for (x, y) in neighborCoords]
+                
                 if (breakOnCollision):
                     possibleCoords = [(x, y) for (x, y) in neighborCoords if (self.lp.GetPixel(x, y).GetColor() != self.color)]
                 else:
@@ -89,10 +138,14 @@ class AutomodeBot:
         elif (self.wait > 0):
             self.wait -= 1
 
-        print("x:%d->%d y:%d->%d w:%d l:%d c:%d" % (self.lastx, self.x, self.lasty, self.y, self.wait, self.walkLength, self.color))
+        # print("x:%d->%d y:%d->%d w:%d l:%d c:%d" % (self.lastx, self.x, self.lasty, self.y, self.wait, self.walkLength, self.color))
         self.lastx = self.x
         self.lasty = self.y
         return (self.x, self.y, self.color)
+
+    def getRGB(self):
+        # print("GET RGB", self.rgb)
+        return self.rgb 
 
 lp = LaunchpadMiniMk3(pickPortInteractive())
 a = AutomodeBot(lp)
@@ -167,10 +220,13 @@ def buttonPress(msg):
         lp.SetPixel(x1, y1, color)
         lp.SetPixel(x2, y2, color)
         lp.SetPixel(x3, y3, color)
-    print("BUTTON PRESS x %d, y %d" % (x, y))
+    # print("BUTTON PRESS x %d, y %d" % (x, y))
 
-def autoButtonPress(x, y, c): # TODO make this better. could codeshare
-    lp.SetPixel(x, y, c)
+def autoButtonPress(x, y, c, rgb=None): # TODO make this better. could codeshare
+    if (USE_RGB):
+        lp.SetPixelRgb(x,y,*rgb)
+    else:
+        lp.SetPixel(x, y, c)
     if (mirrormodes == 1): # HORIZONTAL MIRROR
         x1 = x
         y1 = INNER_GRID_HEIGHT - y - 1
@@ -186,10 +242,16 @@ def autoButtonPress(x, y, c): # TODO make this better. could codeshare
         y2 = INNER_GRID_HEIGHT - y - 1
         x3 = INNER_GRID_WIDTH - x - 1
         y3 = INNER_GRID_HEIGHT - y - 1
-        lp.SetPixel(x1, y1, c)
-        lp.SetPixel(x2, y2, c)
-        lp.SetPixel(x3, y3, c)
-    print("BUTTON PRESS x %d, y %d" % (x, y))
+        if (USE_RGB):
+            lp.SetPixelRgb(x1,y1,*rgb)
+            lp.SetPixelRgb(x2,y2,*rgb)
+            lp.SetPixelRgb(x3,y3,*rgb)
+        else:
+            lp.SetPixel(x1, y1, c)
+            lp.SetPixel(x2, y2, c)
+            lp.SetPixel(x3, y3, c)
+
+    # print("BUTTON PRESS x %d, y %d" % (x, y))
 
 
 def updateColorSignifier():
@@ -208,7 +270,11 @@ def main():
         try:
             if (automodeEnabled):
                 x, y, c = a.update()
-                autoButtonPress(x, y, c)
+                if (USE_RGB):
+                    rgb = a.getRGB()
+                    autoButtonPress(x, y, c, rgb)
+                else:
+                    autoButtonPress(x, y, c)
             lp.Poll()
             time.sleep(0.01)
         except KeyboardInterrupt:
